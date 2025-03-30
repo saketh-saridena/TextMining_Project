@@ -53,5 +53,35 @@ top_lift <- head(sort(rules, by = "lift", decreasing = TRUE), 15)
 cat("\nTop 15 Rules by Lift:\n")
 inspect(top_lift)
 
-# Optional Visualization
-plot(head(sort(rules, by = "lift", decreasing = TRUE), 10), method = "graph", engine = "htmlwidget")
+# Plot heatmap
+ggplot(melted_lift, aes(x = consequents, y = antecedents, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(name = "Lift", low = "lightblue", high = "darkgreen") +
+  geom_text(aes(label = round(value, 2)), size = 3) +
+  theme_minimal() +
+  labs(title = "Grouped Matrix Plot of Rules (Lift Values)",
+       x = "Consequents",
+       y = "Antecedents") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(angle = 0))
+
+# Plot network graph
+top_rules <- rules_df %>%
+  arrange(desc(lift)) %>%
+  head(50)
+
+# Create edge list
+edges <- top_rules %>%
+  select(antecedents, consequents, lift) %>%
+  mutate(from = antecedents, to = consequents)
+
+# Build graph and plot
+graph <- tbl_graph(edges = edges, directed = TRUE)
+
+ggraph(graph, layout = "fr") +
+  geom_edge_link(aes(width = lift), arrow = arrow(length = unit(4, 'mm')),
+                 end_cap = circle(4, 'mm'), alpha = 0.6) +
+  geom_node_point(color = "lightblue", size = 5) +
+  geom_node_text(aes(label = name), repel = TRUE, size = 4) +
+  labs(title = "Network Graph of Association Rules (Top 50 by Lift)") +
+  theme_void()
